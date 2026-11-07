@@ -1,0 +1,26 @@
+# Youru overrides for the Colab training notebook (training/README.md, Part 2, step 6).
+# Only these keys are changed; the notebook sets all paths itself.
+
+target_phrase: ["youru"]          # change if the pronunciation check (Part 2, step 4) prefers another spelling
+n_samples: 3000                   # synthetic TTS positives (notebook default 2000)
+n_samples_val: 1000
+target_false_positives_per_hour: 0.2
+
+# Sound-alikes that must NOT trigger. TTS generates adversarial clips of these.
+custom_negative_phrases:
+  - "your"
+  - "you're"
+  - "yours"
+  - "your room"
+  - "you rule"
+  - "europe"
+  - "euro"
+  - "yoru"
+  - "uber"
+  - "guru"
+  - "you ruined"
+  - "you are"
+  - "yaar"
+  - "uri"
+  - "urdu"
+  - "your router"

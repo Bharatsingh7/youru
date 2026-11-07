@@ -1,0 +1,53 @@
+[project]
+name = "youru"
+version = "0.1.0"
+description = "Local voice assistant: wake word, speech detection and owner voice lock"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy>=1.26,<3",
+    "sounddevice>=0.5",
+    "soundfile>=0.12",
+    "soxr>=0.5",
+    "sherpa-onnx>=1.13.8",
+    "openwakeword==0.6.0",
+    "onnxruntime>=1.18",
+    "scikit-learn>=1.4",
+    "noisereduce>=3.0",
+    "pyyaml>=6.0",
+    "rich>=13.7",
+    "sherpa-onnx-core==1.13.8",
+    "openai>=3.35.1",
+    "ddgs>=9.16.0",
+    "trafilatura>=2.3.1",
+    "psutil>=7.2.2",
+    "httpx>=0.28.1",
+    "omnipilot-agent==0.1.0",
+    "yt-dlp>=2026.8.19",
+    "kokoro-onnx>=0.6.1",
+]
+
+[project.optional-dependencies]
+stt = [
+    "faster-whisper>=1.1",
+    "nvidia-cublas-cu12",
+    "nvidia-cudnn-cu12>=9,<10",
+]
+
+[project.scripts]
+youru = "youru.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.uv]
+# openWakeWord pins tflite-runtime on Linux, which has no wheels for Python >= 3.12.
+# We always use its ONNX backend, so drop tflite entirely.
+override-dependencies = ["tflite-runtime; sys_platform == 'never'"]
+environments = ["sys_platform == 'linux'"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["uv_build>=0.13.3,<0.14.0"]
+build-backend = "uv_build"

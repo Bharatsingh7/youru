@@ -1,0 +1,89 @@
+# Known ways to do things on this PC (CachyOS + Hyprland, ASUS TUF F15). Used by the how_to tool.
+# Each command still goes through the risk rules: read-only ones run, changes ask first.
+- task: default browser / which browser is default / make firefox (or brave) the default browser
+  commands:
+    - "xdg-settings get default-web-browser"
+    - "xdg-settings set default-web-browser firefox.desktop   # or brave-browser.desktop"
+- task: fan speed / fan rpm / how fast are the fans / GPU or CPU fan
+  commands:
+    - "for h in /sys/class/hwmon/hwmon*; do [ \"$(cat $h/name)\" = asus ] && paste <(ls $h/fan*_input) <(cat $h/fan*_input); done"
+    - "sensors | grep -i fan"
+  note: fan1 is the CPU fan, fan2 the GPU fan, in rpm
+- task: fan mode / performance mode / power mode / power profile / quiet mode / balanced mode / power saver / battery saver / make fans quieter / silent mode
+  commands:
+    - "asusctl profile get"
+    - "asusctl profile set Quiet   # or Balanced, Performance"
+  note: this ASUS laptop uses asusctl profiles (Quiet = power saver); powerprofilesctl is not running here
+- task: battery charge limit / stop charging at 80 percent / battery health
+  commands:
+    - "asusctl battery limit 80"
+- task: keyboard backlight / keyboard light brightness
+  commands:
+    - "asusctl leds get"
+    - "asusctl leds set high   # off, low, med, high"
+- task: wifi on / wifi off / turn off internet / wifi status / connected network
+  commands:
+    - "nmcli radio wifi"
+    - "nmcli -t -f active,ssid dev wifi | grep '^yes'"
+    - "nmcli radio wifi off   # or on"
+- task: bluetooth on / bluetooth off / bluetooth devices
+  commands:
+    - "bluetoothctl show | grep Powered"
+    - "bluetoothctl devices Connected"
+    - "bluetoothctl power off   # or on"
+- task: ip address / my ip / local ip
+  commands:
+    - "ip -4 -brief addr show | grep -v '^lo'"
+- task: public ip / internet ip / external ip
+  commands:
+    - "curl -s https://ifconfig.me"
+- task: dark mode / light mode / theme
+  commands:
+    - "gsettings get org.gnome.desktop.interface color-scheme"
+    - "gsettings set org.gnome.desktop.interface color-scheme prefer-dark   # or prefer-light"
+- task: night light / blue light filter / warm screen
+  commands:
+    - "~/.local/bin/nightlight_toggle.sh"
+- task: empty trash / clear recycle bin
+  commands:
+    - "gio trash --empty"
+- task: check for updates / how many updates
+  commands:
+    - "checkupdates | wc -l"
+    - "checkupdates | head -20"
+- task: restart sound / audio not working / fix audio
+  commands:
+    - "systemctl --user restart pipewire pipewire-pulse wireplumber"
+- task: disk space / storage left / biggest folders
+  commands:
+    - "df -h /home /"
+    - "du -sh ~/* 2>/dev/null | sort -h | tail -10"
+- task: what is using ram / memory hog / what is using cpu
+  commands:
+    - "ps -eo pid,comm,%mem,%cpu --sort=-%mem | head -10"
+    - "ps -eo pid,comm,%cpu,%mem --sort=-%cpu | head -10"
+- task: uptime / when did the computer start
+  commands:
+    - "uptime -p"
+- task: screen recording / record the screen
+  commands:
+    - "~/.local/bin/record.sh"
+- task: region screenshot / screenshot of an area
+  commands:
+    - "~/.local/bin/screenshot.sh"
+- task: clipboard history
+  commands:
+    - "~/.local/bin/clipboard_menu.sh"
+- task: open settings / system settings / control center
+  commands:
+    - "qs -p ~/.config/quickshell/mecha/shell.qml ipc call controlcenter toggle"
+- task: kernel version / os version / system details
+  commands:
+    - "uname -r"
+    - "cat /etc/os-release | head -3"
+- task: installed package / is a program installed / version of a package
+  commands:
+    - "pacman -Q <name>"
+- task: open a terminal in a folder
+  commands:
+    - "kitty --directory <folder>"

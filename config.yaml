@@ -1,0 +1,103 @@
+# Youru phase 1 configuration. Paths are relative to the project root.
+
+audio:
+  device: null          # null = PipeWire default source (the built-in C-Media mic)
+  channel: mix          # mix | 0 | 1  (mic-check tells you if one channel is better)
+  preroll_s: 2.5        # audio kept before the wake word fires
+
+vad:
+  model: models/vad/silero_vad.onnx
+  threshold: 0.5        # speech probability to start a segment
+  neg_threshold: 0.35   # probability below which a frame counts as silence
+  min_speech_s: 0.25
+  min_silence_s: 0.8    # long enough for natural Hinglish pauses
+
+wakeword:
+  # Placeholder until the custom "youru" model is trained (see training/README.md).
+  # Then set: model: models/wakeword/youru.onnx
+  model: models/wakeword/hey_jarvis_v0.1.onnx
+  threshold: 0.5
+  verifier: null        # set by `youru train-verifier`, e.g. models/wakeword/youru_verifier.pkl
+  verifier_threshold: 0.3
+  require_speech: true  # ignore triggers while the VAD hears no speech (stops fan-noise triggers)
+  refractory_s: 1.5
+
+listen:
+  command_timeout_s: 4.0  # how long to wait for a command after the wake word
+  max_command_s: 15.0
+
+speaker:
+  enabled: false            # voice lock bypassed for now; true = only your voice is accepted
+  model: titanet_large       # titanet_large | wespeaker_resnet34 | wespeaker_campp
+  accept: 0.50              # recalibrate with `youru eval`
+  reject: 0.35
+  min_speech_s: 1.5
+  adapt: true               # learn from confidently accepted utterances
+  adapt_margin: 0.10
+  adapt_max: 100
+  denoise: false            # enable if `youru eval` shows it helps
+
+stt:
+  # Whisper turbo fine-tuned by Oriserve on ~700 h of noisy Indian-accented Hindi; writes Hindi as Hinglish
+  # ("music chalao"). Converted locally from Oriserve/Whisper-Hindi2Hinglish-Apex. Original: large-v3-turbo
+  model: models/stt/whisper-hinglish-apex
+  device: cuda              # cuda | cpu (falls back to cpu automatically)
+  compute_type: int8_float16
+  language: null            # null = auto-detect among `languages`; or force "hi" / "en"
+  languages: [en, hi]       # every other Whisper language is blocked
+  initial_prompt:           # per-language hint for names and style
+    en: "Hey Jarvis, aaj ka mausam batao. Open Firefox. Music chalao."
+    hi: "हे जार्विस, आज का मौसम बताओ। गाना चलाओ।"
+
+logging:
+  save_sessions: true       # saves every triggered utterance to data/sessions/
+
+llm:
+  binary: llama-server
+  # Gemma 4 E2B (Google QAT 4-bit): ~79 tok/s on the RTX 3050 Ti with its 1.8 GB per-layer embedding
+  # table kept in RAM (extra_args below), so only ~1.3 GB sits on the GPU next to Whisper.
+  # E4B doesn't fit in 4 GB at all. Older/faster option: models/llm/Qwen3.5-2B-Q4_K_M.gguf (remove extra_args).
+  model: models/llm/gemma-4-E2B_q4_0-it.gguf
+  port: 8088
+  ctx: 16384                # shared by the 2 slots (8192 each); size barely affects VRAM for Gemma
+  parallel: 2               # slot 0: the agent (keeps its tool-list prompt cached), slot 1: Hinglish -> English
+  device: Vulkan0           # the NVIDIA GPU; without this llama.cpp also uses the slow Intel iGPU
+  gpu_layers: 99            # all layers on the GPU
+  ubatch: 256
+  think_budget: 48          # max reasoning tokens when it thinks (why/explain/compare questions)
+  threads: 4                # CPU threads while generating (fewer = cooler, slightly slower)
+  temperature: 0.3          # low = more reliable tool calls
+  top_p: 0.95
+  top_k: 64
+  max_tokens: 400
+  # Both embedding tables stay in RAM: ~1.17 GB on the GPU, ~40 tok/s. This leaves ~0.9 GB spare for
+  # Whisper + Brave/VS Code (they render on the NVIDIA GPU via the HDMI monitor), which stops the
+  # "CUDA out of memory" crashes. Faster (~69 tok/s) but 310 MB tighter:
+  #   extra_args: ["-ot", "per_layer_token_embd.weight=CPU"]
+  extra_args: ["-ot", "per_layer_token_embd.weight=CPU,token_embd.weight=CPU"]
+
+tts:
+  enabled: true
+  en_voice: models/tts/vits-piper-en_US-lessac-medium   # the default English voice
+  english_voice: default  # default | glados  (or say "use GLaDOS voice" / "normal voice")
+  voices:                   # extra English voices to switch to
+    glados: models/tts/vits-piper-en_US-glados
+  hi_voice: models/tts/vits-piper-hi_IN-priyamvada-medium
+  speed: 1.0
+
+assistant:
+  max_tool_rounds: 6
+  memory_turns: 10          # remembered exchanges
+  memory_reset_s: 300       # forget the conversation after 5 min idle
+  confirm_timeout_s: 6
+  notify: true              # also show replies as desktop notifications
+  sleep_after_min: 15       # unload Whisper after this long without a command (0 = never)
+  thinking: true            # reason first only for why/explain/compare questions, with a filler
+  solve_on_refusal: true    # when it would say "I can't", look for a way (recipes, search, shell)
+  learn: true               # remember facts, corrections, recipes and skills (~/.local/share/youru)
+  normalize_hinglish: true  # rewrite Hindi/Hinglish commands into English first (~0.3 s), so tools get used
+
+digup:                      # DigUp (github.com/ARahim3/DigUp): find files by what's in them
+  folders: [~/Documents, ~/Downloads, ~/Pictures, ~/Desktop, ~/Music, ~/Videos]
+  code_folders: [~/Projects]
+  encoder_idle_s: 600       # unload DigUp's query model after 10 min without a search

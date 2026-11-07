@@ -1,0 +1,13 @@
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.venv
+.pytest_cache/
+
+# your voice recordings, profile and downloaded models stay local
+data/
+models/
+tests/fixtures/
